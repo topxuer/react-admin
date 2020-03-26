@@ -45,8 +45,10 @@ const useTypeScript = fs.existsSync(paths.appTsConfig);
 // style files regexes
 const cssRegex = /\.css$/;
 const cssModuleRegex = /\.module\.css$/;
-const sassRegex = /\.(scss|sass)$/;
+const sassRegex = /\.(scss|sass)$/;  //匹配 后缀是.scss或.sass的正则
+const lessRegex = /\.less$/;  //匹配 后缀是.less的正则
 const sassModuleRegex = /\.module\.(scss|sass)$/;
+const lessModuleRegex = /\.module\.less$/;
 
 // This is the production and development configuration.
 // It is focused on developer experience, fast rebuilds, and a minimal bundle.
@@ -380,6 +382,7 @@ module.exports = function(webpackEnv) {
                       },
                     },
                   ],
+                  ['import',{ "libraryName": "antd", style: true }]  //antd按需引入增加的配置
                 ],
                 // This is a feature of `babel-loader` for webpack (not Babel itself).
                 // It enables caching results in ./node_modules/.cache/babel-loader/
@@ -449,24 +452,53 @@ module.exports = function(webpackEnv) {
                 },
               }),
             },
-            // Opt-in support for SASS (using .scss or .sass extensions).
-            // By default we support SASS Modules with the
-            // extensions .module.scss or .module.sass
             {
-              test: sassRegex,
-              exclude: sassModuleRegex,
+              test: lessRegex, // 匹配后缀名是 .less 或 .scss的文件
+              exclude: lessModuleRegex,  //排除 后缀名是 .module.less 的文件
               use: getStyleLoaders(
                 {
                   importLoaders: 3,
                   sourceMap: isEnvProduction && shouldUseSourceMap,
                 },
-                'sass-loader'
+                'less-loader'   // 匹配到的文件 使用less-loader来处理
               ),
               // Don't consider CSS imports dead code even if the
               // containing package claims to have no side effects.
               // Remove this when webpack adds a warning or an error for this.
               // See https://github.com/webpack/webpack/issues/6571
               sideEffects: true,
+            },
+            // Opt-in support for SASS (using .scss or .sass extensions).
+            // By default we support SASS Modules with the
+            // extensions .module.scss or .module.sass
+            {
+              test: sassRegex, // 匹配后缀名是 .sass 或 .scss的文件
+              exclude: sassModuleRegex,  //排除 后缀名是 .module.sass 或 .module.scss 的文件
+              use: getStyleLoaders(
+                {
+                  importLoaders: 3,
+                  sourceMap: isEnvProduction && shouldUseSourceMap,
+                },
+                'sass-loader'   // 匹配到的文件 使用sass-loader来处理
+              ),
+              // Don't consider CSS imports dead code even if the
+              // containing package claims to have no side effects.
+              // Remove this when webpack adds a warning or an error for this.
+              // See https://github.com/webpack/webpack/issues/6571
+              sideEffects: true,
+            },
+            {
+              test: lessModuleRegex,
+              use: getStyleLoaders(
+                {
+                  importLoaders: 3,
+                  sourceMap: isEnvProduction && shouldUseSourceMap,
+                  modules: {
+                    getLocalIdent: getCSSModuleLocalIdent,
+                  },
+                },
+                'less-loader'
+              ),
             },
             // Adds support for CSS Modules, but using SASS
             // using the extension .module.scss or .module.sass
